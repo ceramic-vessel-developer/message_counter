@@ -18,7 +18,8 @@ class User:
         self.name=name
         self.mes=mes
         self.char=char
-def counter(file, usr_name,group):
+def counter(file,group):
+    global conv_members
     page = open(file)
     try:
 
@@ -27,46 +28,50 @@ def counter(file, usr_name,group):
             """
             CODE FOR ONE PERSON CONVERSATION
             """
-            usr_m = 0
-            usr_char = 0
-            con_m = 0
-            con_char = 0
+
             conv=html.select('div.pam')
             for i in range(len(conv)):
-                if conv[i].select_one('div._2pio').text.lower()==usr_name.lower():
-                    usr_m+=1
-                    usr_char+=len(conv[i].select_one('div._2let > div:nth-child(1) > div:nth-child(2)'))
-                else:
-                    con_m += 1
-                    con_char += len(conv[i].select_one('div._2let > div:nth-child(1) > div:nth-child(2)'))
-        else:
+                username=conv[i].select_one('div._2pio').text
+                if username not in conv_members.keys():
+                    conv_members[username]=User(username,0,0)
+                conv_members[username].mes += 1
+                conv_members[username].char += len(
+                    conv[i].select_one('div._2let > div:nth-child(1) > div:nth-child(2)').text)
+
+        #else:
             """
+            for i in conv_members.keys():
+    print(f'{conv_members[i].name}:\n\tmessages: {conv_members[i].mes}\n\tcharacters: {conv_members[i].char}')
             CODE FOR GROUP CONVERSTIONS
             """
             #TODO napisz kod do liczenia rozmów grupowych
 
-        return ['',0]
     finally:
         page.close()
 def conv_maker(files,usr_name):
+    global conv_members
     conv_members={}
+
     conv_members[usr_name]=User(usr_name, 0, 0)
     with open(files[0]) as file:
         html = BeautifulSoup(file)
         chat=Conversation([],html.select_one('._3b0d').text)
 
         if html.select('div.pam:nth-child(1) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2)'):
-
             conv_members[html.select_one('._3b0d').text]=User(html.select_one('._3b0d').text,0,0)
             switch=True
-        else:
-           """ string=html.select_one('div.pam:nth-child(1) > div:nth-child(1)').text
+
+
+            """ string=html.select_one('div.pam:nth-child(1) > div:nth-child(1)').text
             stringstring.strip()
             names=string.split(', ')
             names.pop(usr_name)
             for name in names:
                 conv_members.append(User)"""
-            #TODO ogarnij coś z grupami bo to masakra jakaś
+            #TODO ogarnij coś z grupami bo to masakra
+    for file in files:
+        counter(file,switch)
+
 
 
 
