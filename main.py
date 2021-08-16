@@ -22,7 +22,7 @@ class User:
 
 
 def counter(file):
-    global fulldir
+    global fulldir,processed,name
     with open(file) as page:
 
         html = BeautifulSoup(page)
@@ -30,6 +30,7 @@ def counter(file):
         conv = html.select('div.pam')
         conv_name=html.select_one('._3b0d').text
         fulldir[conv_name]=Conversation({}, conv_name)
+        fulldir[conv_name].users[name] = User(name, 0, 0)
         for i in range(2):
             if (not conv[0].select_one('div._2pio')) or (not conv[0].select_one('div._2let > div:nth-child(1) > div:nth-child(2)')):
                 conv.pop(0)
@@ -40,6 +41,8 @@ def counter(file):
             fulldir[conv_name].users[username].mes += 1
             fulldir[conv_name].users[username].char += len(
                 conv[i].select_one('div._2let > div:nth-child(1) > div:nth-child(2)').text)
+    processed+=1
+    print(f'Finished processing{file}\n{round((processed/length)*100,2)}% completed')
 
 '''
 def conv_maker(files, usr_name):
@@ -81,6 +84,8 @@ for conv in conversations:
     os.chdir(mypath)
     onlyfiles.extend([os.path.join(os.getcwd(),f) for f in os.listdir(mypath) if os.path.isfile(os.path.join(mypath, f))])
 chunks=chunkIt(onlyfiles,os.cpu_count())
+length=len(onlyfiles)
+processed=0
 for chunk in chunks:
     with concurrent.futures.ThreadPoolExecutor() as executor:
         executor.map(counter,chunk)
