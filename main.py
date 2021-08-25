@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import os
 import time
 import concurrent.futures
+import numpy as np
 
 
 path = input('Write the path to the fb data folder: ')
@@ -28,12 +29,13 @@ def counter(file):
         html = BeautifulSoup(page)
 
         conv = html.select('div.pam')
+        conv=np.asarray(conv + [None])[:-1]
         conv_name=html.select_one('._3b0d').text
         fulldir[conv_name]=Conversation({}, conv_name)
         fulldir[conv_name].users[name] = User(name, 0, 0)
         for i in range(2):
             if (not conv[0].select_one('div._2pio')) or (not conv[0].select_one('div._2let > div:nth-child(1) > div:nth-child(2)')):
-                conv.pop(0)
+                np.delete(conv,0)
         for i in range(len(conv)):
             username = conv[i].select_one('div._2pio').text
             if username not in fulldir[conv_name].users.keys():
