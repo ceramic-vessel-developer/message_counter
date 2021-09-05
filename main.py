@@ -9,6 +9,7 @@ script_list=[]
 
 class Sc3Thread(QtCore.QThread):
     _signal=QtCore.pyqtSignal(int)
+    finished_signal=QtCore.pyqtSignal(bool)
     def __init__(self,path,name,progressBar,processingLabel):
         super(Sc3Thread, self).__init__()
         self.path=path
@@ -20,7 +21,7 @@ class Sc3Thread(QtCore.QThread):
         self.wait()
     def run(self):
         global script_list
-        script_list=script.main(self.path, self.name,self._signal,self.processingLabel, self.progressBar)
+        script_list=script.main(self.path, self.name,self._signal,self.processingLabel, self.progressBar,self.finished_signal)
 
 # class PercentageWorker(QtCore.QObject):
 #     started = QtCore.pyqtSignal()
@@ -119,9 +120,11 @@ class Screen3(QDialog):
         self.processingLabel.setHidden(True)
         self.progressBar.setHidden(True)
         self.pathLabel.setHidden(False)
+        self.next.setHidden(True)
 
         self.process_button.clicked.connect(self.process_clicked)
         self.previous_button.clicked.connect(self.previous_clicked)
+        self.next.clicked.connect(self.next_clicked)
 
         widget.currentChanged.connect(self.label_update)
 
@@ -130,6 +133,7 @@ class Screen3(QDialog):
         global path, name
         self.thread = Sc3Thread(path, name, self.progressBar, self.processingLabel)
         self.thread._signal.connect(self.progressBar.setValue)
+        self.thread.finished_signal.connect(self.next.setHidden)
         self.nameLabel.setText(name)
         self.nameLabel.adjustSize()
         self.pathLabel.setText(path)
@@ -137,7 +141,6 @@ class Screen3(QDialog):
     def previous_clicked(self):
         widget.setCurrentIndex(widget.currentIndex()-1)
     def process_clicked(self):
-        #self.thread = Sc3Thread(path, name, self.progressBar, self.processingLabel)
         self.pathLabel.setHidden(True)
         self.nameLabel.setHidden(True)
         self.process_button.setHidden(True)
@@ -146,11 +149,22 @@ class Screen3(QDialog):
         self.processingLabel.setHidden(False)
         self.progressBar.setHidden(False)
         self.thread.start()
+    def next_clicked(self):
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+class Screen4(QDialog):
+    def __init__(self):
+        super(Screen4,self).__init__()
+        loadUi('screen_4.ui',self)
+        self.previous_button.clicked.connect(self.previous_clicked)
+    def previous_clicked(self):
+        widget.setCurrentIndex(widget.currentIndex()-1)
 
 
 
 screen_3=Screen3()
+screen_4=Screen4()
 widget.addWidget(screen_3)
+widget.addWidget(screen_4)
 widget.setFixedWidth(400)
 widget.setFixedHeight(300)
 

@@ -122,6 +122,19 @@
     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Click Process to start or change your data &lt;br/&gt;by clicking Previous&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="next">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>260</y>
+     <width>89</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Next</string>
+   </property>
+  </widget>
   <zorder>processingLabel</zorder>
   <zorder>previous_button</zorder>
   <zorder>process_button</zorder>
@@ -129,6 +142,7 @@
   <zorder>nameLabel</zorder>
   <zorder>infoLabel</zorder>
   <zorder>pathLabel</zorder>
+  <zorder>next</zorder>
  </widget>
  <resources/>
  <connections/>

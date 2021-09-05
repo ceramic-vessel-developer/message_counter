@@ -8,7 +8,7 @@ from itertools import repeat
 fulldir=''
 processed=0
 length=0
-def main(path,name,signal,label,bar):
+def main(path,name,signal,label,bar,finished_signal):
     global fulldir, processed, length
 
     class Conversation:
@@ -87,7 +87,7 @@ def main(path,name,signal,label,bar):
     bar.setValue(bar.maximum())
     label.setText('Processing complete!')
     label.adjustSize()
-
+    finished_signal.emit(False)
     return fulldir.values()
     # fullist = fulldir.values()
     # for i in fullist:
