@@ -2,13 +2,67 @@ import PyQt5.QtGui
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.uic import loadUi
 from PyQt5.QtWidgets import QApplication, QStackedWidget, QDialog
-import sys,os,script,test,time
+import sys,os,script,time,threading
 name=''
 path=''
-class EmittingStream(QtCore.QObject):
-    text_written=QtCore.pyqtSignal(str)
-    def write(self,text):
-        self.text_written.emit(str(text))
+script_list=[]
+
+class Sc3Thread(QtCore.QThread):
+    _signal=QtCore.pyqtSignal(int)
+    def __init__(self,path,name,progressBar,processingLabel):
+        super(Sc3Thread, self).__init__()
+        self.path=path
+        self.name=name
+        self.progressBar=progressBar
+        self.processingLabel=processingLabel
+
+    def __del__(self):
+        self.wait()
+    def run(self):
+        global script_list
+        script_list=script.main(self.path, self.name,self._signal,self.processingLabel, self.progressBar)
+
+# class PercentageWorker(QtCore.QObject):
+#     started = QtCore.pyqtSignal()
+#     finished = QtCore.pyqtSignal()
+#     percentageChanged = QtCore.pyqtSignal(int)
+#
+#     def __init__(self, parent=None):
+#         super().__init__(parent)
+#         self._percentage = 0
+#
+#     @property
+#     def percentage(self):
+#         return self._percentage
+#
+#     @percentage.setter
+#     def percentage(self, value):
+#         if self._percentage == value:
+#             return
+#         self._percentage = value
+#         self.percentageChanged.emit(self.percentage)
+#
+#     def start(self):
+#         self.started.emit()
+#
+#     def finish(self):
+#         self.finished.emit()
+#
+#
+# class FakeWorker:
+#     def start(self):
+#         pass
+#
+#     def finish(self):
+#         pass
+#
+#     @property
+#     def percentage(self):
+#         return 0
+#
+#     @percentage.setter
+#     def percentage(self, value):
+#         pass
 class Screen1(QDialog):
     def __init__(self):
         super(Screen1,self).__init__()
@@ -61,14 +115,21 @@ class Screen3(QDialog):
     def __init__(self):
         super(Screen3,self).__init__()
         loadUi('screen_3.ui',self)
+        global path, name
         self.processingLabel.setHidden(True)
         self.progressBar.setHidden(True)
         self.pathLabel.setHidden(False)
 
         self.process_button.clicked.connect(self.process_clicked)
         self.previous_button.clicked.connect(self.previous_clicked)
+
         widget.currentChanged.connect(self.label_update)
+
+
     def label_update(self):
+        global path, name
+        self.thread = Sc3Thread(path, name, self.progressBar, self.processingLabel)
+        self.thread._signal.connect(self.progressBar.setValue)
         self.nameLabel.setText(name)
         self.nameLabel.adjustSize()
         self.pathLabel.setText(path)
@@ -76,7 +137,18 @@ class Screen3(QDialog):
     def previous_clicked(self):
         widget.setCurrentIndex(widget.currentIndex()-1)
     def process_clicked(self):
-        pass
+        #self.thread = Sc3Thread(path, name, self.progressBar, self.processingLabel)
+        self.pathLabel.setHidden(True)
+        self.nameLabel.setHidden(True)
+        self.process_button.setHidden(True)
+        self.infoLabel.setHidden(True)
+        self.previous_button.setHidden(True)
+        self.processingLabel.setHidden(False)
+        self.progressBar.setHidden(False)
+        self.thread.start()
+
+
+
 screen_3=Screen3()
 widget.addWidget(screen_3)
 widget.setFixedWidth(400)
@@ -87,4 +159,5 @@ try:
     sys.exit(app.exec_())
 except:
     print('Its over xD')
+#TODO Clear this mess
 
