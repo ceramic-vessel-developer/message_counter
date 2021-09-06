@@ -90,12 +90,12 @@ def main(path,name,signal,label,bar,finished_signal):
     finished_signal.emit(False)
     return fulldir.values()
     # fullist = fulldir.values()
-    # for i in fullist:
-    #     i.users = i.users.values()
-    # for i in fullist:
-    #     print(f'{i.conv_name}')
-    #     for k in i.users:
-    #         print(f'\t{k.name}\n\t\tmessages: {k.mes}\n\t\tcharacters:{k.char}')
+    for i in fullist:
+        i.users = i.users.values()
+    for i in fullist:
+        print(f'{i.conv_name}')
+        for k in i.users:
+            print(f'\t{k.name}\n\t\tmessages: {k.mes}\n\t\tcharacters:{k.char}')
 # stop=time.perf_counter()
 # print(f'Finished in {stop-start} second(s)')
 #TODO try process pool executor

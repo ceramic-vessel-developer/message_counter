@@ -1,12 +1,45 @@
 import PyQt5.QtGui
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import Qt
 from PyQt5.uic import loadUi
-from PyQt5.QtWidgets import QApplication, QStackedWidget, QDialog
+from PyQt5.QtWidgets import QApplication, QStackedWidget, QDialog,QScrollArea,QWidget,QVBoxLayout,QLabel
 import sys,os,script,time,threading
 name=''
 path=''
 script_list=[]
+final_string=''
+class ScrollLabel(QScrollArea):
 
+    # constructor
+    def __init__(self, *args, **kwargs):
+        QScrollArea.__init__(self, *args, **kwargs)
+
+        # making widget resizable
+        self.setWidgetResizable(True)
+
+        # making qwidget object
+        content = QWidget(self)
+        self.setWidget(content)
+
+        # vertical box layout
+        lay = QVBoxLayout(content)
+
+        # creating label
+        self.label = QLabel(content)
+
+        # setting alignment to the text
+        self.label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+
+        # making label multi-line
+        self.label.setWordWrap(True)
+
+        # adding label to the layout
+        lay.addWidget(self.label)
+
+    # the setText method
+    def setText(self, text):
+        # setting text to the label
+        self.label.setText(text)
 class Sc3Thread(QtCore.QThread):
     _signal=QtCore.pyqtSignal(int)
     finished_signal=QtCore.pyqtSignal(bool)
@@ -95,7 +128,7 @@ class Screen2(QDialog):
         if not path:
             self.error.setHidden(False)
         else:
-            print(path)
+
             self.error.setHidden(True)
             widget.setCurrentIndex(widget.currentIndex() + 1)
 
@@ -150,14 +183,36 @@ class Screen3(QDialog):
         self.progressBar.setHidden(False)
         self.thread.start()
     def next_clicked(self):
+        global final_string
+        for i in script_list:
+            i.users = i.users.values()
+        for i in script_list:
+            final_string+=f'{i.conv_name}\n'
+            for k in i.users:
+                final_string+=f'\t{k.name}\n\t\tmessages: {k.mes}\n\t\tcharacters:{k.char}\n'
         widget.setCurrentIndex(widget.currentIndex() + 1)
 class Screen4(QDialog):
     def __init__(self):
         super(Screen4,self).__init__()
-        loadUi('screen_4.ui',self)
-        self.previous_button.clicked.connect(self.previous_clicked)
-    def previous_clicked(self):
-        widget.setCurrentIndex(widget.currentIndex()-1)
+        self.setWindowTitle("Message Counter")
+        self.setObjectName("dialog")
+        self.resize(400, 300)
+        self.finishbutton = QtWidgets.QPushButton(self)
+        self.finishbutton.setGeometry(QtCore.QRect(290, 260, 89, 25))
+        self.finishbutton.setObjectName("finishbutton")
+        self.finishbutton.setText('Finish')
+        self.verticalLayoutWidget = QtWidgets.QWidget(self)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(20, 10, 361, 231))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.label = ScrollLabel(self)
+        self.label.setGeometry(200, 200, 200, 80)
+
+        self.verticalLayout.addWidget(self.label)
+        self.finishbutton.clicked.connect(lambda: sys.exit())
+        widget.currentChanged.connect(lambda: self.label.setText(final_string))
 
 
 
