@@ -1,108 +1,232 @@
-from bs4 import BeautifulSoup
-import os
-import time
-import concurrent.futures
-import numpy as np
+import PyQt5.QtGui
+from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import Qt
+from PyQt5.uic import loadUi
+from PyQt5.QtWidgets import QApplication, QStackedWidget, QDialog,QScrollArea,QWidget,QVBoxLayout,QLabel
+import sys,os,script,time,threading
+name=''
+path=''
+script_list=[]
+final_string=''
+class ScrollLabel(QScrollArea):
+
+    # constructor
+    def __init__(self, *args, **kwargs):
+        QScrollArea.__init__(self, *args, **kwargs)
+
+        # making widget resizable
+        self.setWidgetResizable(True)
+
+        # making qwidget object
+        content = QWidget(self)
+        self.setWidget(content)
+
+        # vertical box layout
+        lay = QVBoxLayout(content)
+
+        # creating label
+        self.label = QLabel(content)
+
+        # setting alignment to the text
+        self.label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+
+        # making label multi-line
+        self.label.setWordWrap(True)
+
+        # adding label to the layout
+        lay.addWidget(self.label)
+
+    # the setText method
+    def setText(self, text):
+        # setting text to the label
+        self.label.setText(text)
+class Sc3Thread(QtCore.QThread):
+    _signal=QtCore.pyqtSignal(int)
+    finished_signal=QtCore.pyqtSignal(bool)
+    def __init__(self,path,name,progressBar,processingLabel):
+        super(Sc3Thread, self).__init__()
+        self.path=path
+        self.name=name
+        self.progressBar=progressBar
+        self.processingLabel=processingLabel
+
+    def __del__(self):
+        self.wait()
+    def run(self):
+        global script_list
+        script_list=script.main(self.path, self.name,self._signal,self.processingLabel, self.progressBar,self.finished_signal)
+
+# class PercentageWorker(QtCore.QObject):
+#     started = QtCore.pyqtSignal()
+#     finished = QtCore.pyqtSignal()
+#     percentageChanged = QtCore.pyqtSignal(int)
+#
+#     def __init__(self, parent=None):
+#         super().__init__(parent)
+#         self._percentage = 0
+#
+#     @property
+#     def percentage(self):
+#         return self._percentage
+#
+#     @percentage.setter
+#     def percentage(self, value):
+#         if self._percentage == value:
+#             return
+#         self._percentage = value
+#         self.percentageChanged.emit(self.percentage)
+#
+#     def start(self):
+#         self.started.emit()
+#
+#     def finish(self):
+#         self.finished.emit()
+#
+#
+# class FakeWorker:
+#     def start(self):
+#         pass
+#
+#     def finish(self):
+#         pass
+#
+#     @property
+#     def percentage(self):
+#         return 0
+#
+#     @percentage.setter
+#     def percentage(self, value):
+#         pass
+class Screen1(QDialog):
+    def __init__(self):
+        super(Screen1,self).__init__()
+        loadUi('screen_1.ui',self)
+        self.error.setHidden(True)
+        self.next_button.clicked.connect(self.button_clicked)
+    def button_clicked(self):
+        global name
+        name=self.name.text()
+        if not name:
+            self.error.setHidden(False)
+        else:
+            self.error.setHidden(True)
+            widget.setCurrentIndex(widget.currentIndex()+1)
+class Screen2(QDialog):
+    def __init__(self):
+        super(Screen2,self).__init__()
+        loadUi('screen_2.ui',self)
+        self.error.setHidden(True)
+        self.previous_button.clicked.connect(self.previous_clicked)
+        self.next_button.clicked.connect(self.next_clicked)
+        self.browse_button.clicked.connect(self.browse_clicked)
+    def previous_clicked(self):
+        widget.setCurrentIndex(widget.currentIndex()-1)
+    def next_clicked(self):
+        global path
+        path=self.line_path.text()
+
+        if not path:
+            self.error.setHidden(False)
+        else:
+
+            self.error.setHidden(True)
+            widget.setCurrentIndex(widget.currentIndex() + 1)
+
+    def browse_clicked(self):
+        pathname=QtWidgets.QFileDialog.getExistingDirectory(self,'Choose directory',os.getcwd())
+        self.line_path.setText(pathname)
 
 
-path = input('Write the path to the fb data folder: ')
-name = input('Write in your name: ')
 
-start=time.perf_counter()
-class Conversation:
-    def __init__(self, users, conv_name):
-        self.users = users
-        self.conv_name = conv_name
+app=QApplication(sys.argv)
+screen_1=Screen1()
+screen_2=Screen2()
 
+widget=QStackedWidget()
+widget.addWidget(screen_1)
+widget.addWidget(screen_2)
+class Screen3(QDialog):
+    def __init__(self):
+        super(Screen3,self).__init__()
+        loadUi('screen_3.ui',self)
+        global path, name
+        self.processingLabel.setHidden(True)
+        self.progressBar.setHidden(True)
+        self.pathLabel.setHidden(False)
+        self.next.setHidden(True)
 
-class User:
-    def __init__(self, name='', mes=0, char=0):
-        self.name = name
-        self.mes = mes
-        self.char = char
+        self.process_button.clicked.connect(self.process_clicked)
+        self.previous_button.clicked.connect(self.previous_clicked)
+        self.next.clicked.connect(self.next_clicked)
 
-
-def counter(file):
-    global fulldir,processed,name
-    with open(file) as page:
-
-        html = BeautifulSoup(page)
-
-        conv = html.select('div.pam')
-        conv=np.asarray(conv + [None])[:-1]
-        conv_name=html.select_one('._3b0d').text
-        fulldir[conv_name]=Conversation({}, conv_name)
-        fulldir[conv_name].users[name] = User(name, 0, 0)
-        for i in range(2):
-            if (not conv[0].select_one('div._2pio')) or (not conv[0].select_one('div._2let > div:nth-child(1) > div:nth-child(2)')):
-                np.delete(conv,0)
-        for i in range(len(conv)):
-            username = conv[i].select_one('div._2pio').text
-            if username not in fulldir[conv_name].users.keys():
-                fulldir[conv_name].users[username] = User(username, 0, 0)
-            fulldir[conv_name].users[username].mes += 1
-            fulldir[conv_name].users[username].char += len(
-                conv[i].select_one('div._2let > div:nth-child(1) > div:nth-child(2)').text)
-    processed+=1
-    print(f'Finished processing{file}\n{round((processed/length)*100,2)}% completed')
-
-'''
-def conv_maker(files, usr_name):
-    global conv_members
-    conv_members = {}
-
-    conv_members[usr_name] = User(usr_name, 0, 0)
-    with open(files[0]) as file:
-        html = BeautifulSoup(file)
-        chat = Conversation([], html.select_one('._3b0d').text)
+        widget.currentChanged.connect(self.label_update)
 
 
-    for file in files:
-        counter(file)
-    chat.users = conv_members.values()
-    return chat
-'''
+    def label_update(self):
+        global path, name
+        self.thread = Sc3Thread(path, name, self.progressBar, self.processingLabel)
+        self.thread._signal.connect(self.progressBar.setValue)
+        self.thread.finished_signal.connect(self.next.setHidden)
+        self.nameLabel.setText(name)
+        self.nameLabel.adjustSize()
+        self.pathLabel.setText(path)
+        self.pathLabel.adjustSize()
+    def previous_clicked(self):
+        widget.setCurrentIndex(widget.currentIndex()-1)
+    def process_clicked(self):
+        self.pathLabel.setHidden(True)
+        self.nameLabel.setHidden(True)
+        self.process_button.setHidden(True)
+        self.infoLabel.setHidden(True)
+        self.previous_button.setHidden(True)
+        self.processingLabel.setHidden(False)
+        self.progressBar.setHidden(False)
+        self.thread.start()
+    def next_clicked(self):
+        global final_string
+        for i in script_list:
+            i.users = i.users.values()
+        for i in script_list:
+            final_string+=f'{i.conv_name}\n'
+            for k in i.users:
+                final_string+=f'\t{k.name}\n\t\tmessages: {k.mes}\n\t\tcharacters:{k.char}\n'
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+class Screen4(QDialog):
+    def __init__(self):
+        super(Screen4,self).__init__()
+        self.setWindowTitle("Message Counter")
+        self.setObjectName("dialog")
+        self.resize(400, 300)
+        self.finishbutton = QtWidgets.QPushButton(self)
+        self.finishbutton.setGeometry(QtCore.QRect(290, 260, 89, 25))
+        self.finishbutton.setObjectName("finishbutton")
+        self.finishbutton.setText('Finish')
+        self.verticalLayoutWidget = QtWidgets.QWidget(self)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(20, 10, 361, 231))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.label = ScrollLabel(self)
+        self.label.setGeometry(200, 200, 200, 80)
 
-def chunkIt(seq, num):
-    avg = len(seq) / float(num)
-    out = []
-    last = 0.0
-
-    while last < len(seq):
-        out.append(seq[int(last):int(last + avg)])
-        last += avg
-
-    return out
+        self.verticalLayout.addWidget(self.label)
+        self.finishbutton.clicked.connect(lambda: sys.exit())
+        widget.currentChanged.connect(lambda: self.label.setText(final_string))
 
 
-os.chdir(path + '/messages/inbox')
-path = os.getcwd()
-conversations = os.listdir()
-fulldir={}
-onlyfiles=[]
 
-for conv in conversations:
-    mypath = os.path.join(path,conv)
-    os.chdir(mypath)
-    onlyfiles.extend([os.path.join(os.getcwd(),f) for f in os.listdir(mypath) if os.path.isfile(os.path.join(mypath, f))])
-chunks=chunkIt(onlyfiles,os.cpu_count())
-length=len(onlyfiles)
-processed=0
-for chunk in chunks:
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        executor.map(counter,chunk)
+screen_3=Screen3()
+screen_4=Screen4()
+widget.addWidget(screen_3)
+widget.addWidget(screen_4)
+widget.setFixedWidth(400)
+widget.setFixedHeight(300)
 
-fullist=fulldir.values()
-for i in fullist:
-    i.users=i.users.values()
-for i in fullist:
-    print(f'{i.conv_name}')
-    for k in i.users:
-        print(f'\t{k.name}\n\t\tmessages: {k.mes}\n\t\tcharacters:{k.char}')
-stop=time.perf_counter()
-print(f'Finished in {round(stop-start,2)} second(s)')
+widget.show()
+try:
+    sys.exit(app.exec_())
+except:
+    print('Its over xD')
+#TODO Clear this mess
 
-# TODO skomentuj kod jak człowiek
-# TODO Wprowadź multiprocessing
-# TODO wymyśl w jaki sposób podawać obliczenia końcowe (może excel)
-# TODO dodaj gui
